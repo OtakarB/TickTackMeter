@@ -1,6 +1,6 @@
 <!doctype html>
-<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1D5C52"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
-<title>Tikoměr</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"></head><body>
+<html lang="en"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1D5C52"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>TickTockMeter</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"></head><body>
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Public+Sans:wght@400;500;600;700&display=swap">
@@ -39,8 +39,11 @@ p{margin:0}
 .mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
 .ka{color:var(--a)} .kb{color:var(--b)}
 
-.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
-.top .mark{font-family:var(--mono);font-size:.75rem;color:var(--brass);letter-spacing:.06em}
+.top{display:grid;grid-template-columns:minmax(0,1fr) auto;gap:6px 12px;align-items:start}
+.top .sub{grid-column:1/-1;margin-top:0}
+.lang,.seg{display:inline-flex;border:1px solid var(--line);border-radius:999px;padding:2px;background:var(--surface)}
+.lang button,.seg button{border:0;background:transparent;padding:5px 11px;border-radius:999px;font-family:var(--mono);font-size:.78rem;font-weight:600;color:var(--muted)}
+.lang button[aria-pressed="true"],.seg button[aria-pressed="true"]{background:var(--accent);color:var(--accent-ink)}
 
 .readout{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px}
 .ro-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
@@ -72,6 +75,7 @@ button:disabled{opacity:.45;cursor:not-allowed}
 button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
 .msg{background:var(--surface);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;font-size:.9rem;max-width:70ch}
 .sens{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.sens input:disabled{opacity:.55}
 .sens input{flex:1 1 160px;accent-color:var(--accent);max-width:280px}
 .progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
 .progress span{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
@@ -106,11 +110,12 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
 
 <main class="wrap">
   <header class="top">
-    <div>
-      <h1>Tikoměr</h1>
-      <p class="sub">Poslouchá tikot kyvadlových hodin a měří, zda je interval tik→tak stejný jako tak→tik. Podle výsledku srovnáte náklon hodin, aby nekulhaly.</p>
+    <h1>TickTockMeter</h1>
+    <div class="lang" role="group" aria-label="Language">
+      <button type="button" data-lang="en" aria-pressed="true">EN</button>
+      <button type="button" data-lang="cs" aria-pressed="false">CS</button>
     </div>
-    <span class="mark">BEAT · TAKT</span>
+    <p class="sub" data-i18n="sub"></p>
   </header>
 
   <section class="readout" aria-live="polite">
@@ -121,92 +126,199 @@ td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:now
     <div class="ro-main">
       <div class="big"><span id="bigPct">—</span><span class="unit">%</span></div>
       <div class="ro-side">
-        <div><span class="k">Rozdíl intervalů</span><span class="v" id="bigMs">—</span></div>
-        <div><span class="k">Nejistota 95 %</span><span class="v" id="bigCi">—</span></div>
-        <div><span class="k">Párů úderů</span><span class="v" id="bigN">—</span></div>
+        <div><span class="k" data-i18n="kDiff"></span><span class="v" id="bigMs">—</span></div>
+        <div><span class="k" data-i18n="kCi"></span><span class="v" id="bigCi">—</span></div>
+        <div><span class="k" data-i18n="kPairs"></span><span class="v" id="bigN">—</span></div>
       </div>
     </div>
     <div class="plate">
-      <svg id="plate" viewBox="0 0 400 62" role="img" aria-label="Stupnice nerovnoměrnosti tikotu od −10 do +10 procent"></svg>
-      <div class="plate-legend"><span>B→A delší</span><span>v taktu</span><span>A→B delší</span></div>
+      <svg id="plate" viewBox="0 0 400 62" role="img" data-i18n-aria="plateAria"></svg>
+      <div class="plate-legend"><span data-i18n="legL"></span><span data-i18n="legC"></span><span data-i18n="legR"></span></div>
     </div>
     <p class="advice" id="advice"></p>
   </section>
 
   <section class="controls">
     <div class="btns">
-      <button id="btnMic" class="primary">Poslouchat mikrofonem</button>
-      <button id="btnFile">Nahrát záznam</button>
+      <button id="btnMic" class="primary"></button>
+      <button id="btnFile" data-i18n="btnFile"></button>
       <input type="file" id="file" accept="audio/*,video/*" hidden>
-      <button id="btnDemo" class="quiet">Ukázka</button>
-      <button id="btnReset" class="quiet">Nové měření</button>
+      <button id="btnDemo" class="quiet" data-i18n="btnDemo"></button>
+      <button id="btnReset" class="quiet" data-i18n="btnReset"></button>
     </div>
     <div class="progress" id="progress" hidden><span id="progBar"></span></div>
     <p class="msg" id="msg" hidden></p>
     <div class="sens">
-      <label for="sens">Citlivost detekce úderů</label>
+      <label for="sens" data-i18n="sensLabel"></label>
+      <div class="seg" role="group" data-i18n-aria="sensMode"><button type="button" data-mode="auto" aria-pressed="true" data-i18n="auto"></button><button type="button" data-mode="manual" aria-pressed="false" data-i18n="manual"></button></div>
       <input type="range" id="sens" min="3" max="20" step="1" value="7">
-      <output id="sensOut" class="mono">práh 7× šum</output>
+      <output id="sensOut" class="mono"></output>
     </div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Signál</h2><span class="cap">poslední 4 s · <b class="ka">A</b> hlasitější úder, <b class="kb">B</b> tišší</span></div>
-    <canvas id="trace" aria-label="Obálka zvuku s vyznačenými údery"></canvas>
+    <div class="panel-head"><h2 data-i18n="hSignal"></h2><span class="cap" data-i18n-html="capSignal"></span></div>
+    <canvas id="trace" data-i18n-aria="traceAria"></canvas>
   </section>
 
-  <section class="figs" aria-label="Naměřené hodnoty">
-    <div><span class="k">Interval A→B</span><span class="v" id="fAB">—</span></div>
-    <div><span class="k">Interval B→A</span><span class="v" id="fBA">—</span></div>
-    <div><span class="k">Údery za hodinu</span><span class="v" id="fBph">—</span></div>
-    <div><span class="k">Perioda kyvadla</span><span class="v" id="fT">—</span></div>
-    <div><span class="k">Teoretická délka kyvadla</span><span class="v" id="fL">—</span></div>
-    <div><span class="k">Rozptyl (SD)</span><span class="v" id="fSd">—</span></div>
-    <div><span class="k">Rozlišení A / B</span><span class="v" id="fLoud">—</span></div>
-    <div><span class="k">Vyřazené páry</span><span class="v" id="fOut">—</span></div>
-  </section>
-
-  <section class="panel">
-    <div class="panel-head"><h2>Vývoj odchylky</h2><span class="cap">body = jednotlivé páry, čára = průběžný průměr, zelený pás = ±1 %</span></div>
-    <canvas id="series" aria-label="Graf odchylky v čase"></canvas>
+  <section class="figs" data-i18n-aria="figsAria">
+    <div><span class="k" data-i18n="fAB"></span><span class="v" id="fAB">—</span></div>
+    <div><span class="k" data-i18n="fBA"></span><span class="v" id="fBA">—</span></div>
+    <div><span class="k" data-i18n="fBph"></span><span class="v" id="fBph">—</span></div>
+    <div><span class="k" data-i18n="fT"></span><span class="v" id="fT">—</span></div>
+    <div><span class="k" data-i18n="fL"></span><span class="v" id="fL">—</span></div>
+    <div><span class="k" data-i18n="fSd"></span><span class="v" id="fSd">—</span></div>
+    <div><span class="k" data-i18n="fLoud"></span><span class="v" id="fLoud">—</span></div>
+    <div><span class="k" data-i18n="fOut"></span><span class="v" id="fOut">—</span></div>
   </section>
 
   <section class="panel">
-    <div class="panel-head"><h2>Seřizování</h2><span class="cap">ukládá se jen v tomto prohlížeči</span></div>
+    <div class="panel-head"><h2 data-i18n="hSeries"></h2><span class="cap" data-i18n="capSeries"></span></div>
+    <canvas id="series" data-i18n-aria="seriesAria"></canvas>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2 data-i18n="hLog"></h2><span class="cap" data-i18n="capLog"></span></div>
     <div class="log-form">
-      <input id="note" type="text" placeholder="Co jste změnili, např. spodek skříně o 2 mm doprava" autocomplete="off">
-      <button id="btnSave" disabled>Uložit měření</button>
+      <input id="note" type="text" data-i18n-ph="notePh" autocomplete="off">
+      <button id="btnSave" data-i18n="btnSave" disabled></button>
     </div>
     <div class="tbl"><table>
-      <thead><tr><th>Čas</th><th>Poznámka</th><th>Odchylka</th><th>±95 %</th><th>Párů</th><th>Oproti předchozímu</th><th></th></tr></thead>
+      <thead><tr><th data-i18n="thTime"></th><th data-i18n="thNote"></th><th data-i18n="thErr"></th><th>±95 %</th><th data-i18n="thPairs"></th><th data-i18n="thCmp"></th><th></th></tr></thead>
       <tbody id="logBody"></tbody>
     </table></div>
   </section>
 
   <section class="panel guide">
-    <h2>Jak měřit a seřídit</h2>
+    <h2 data-i18n="hGuide"></h2>
     <ol>
-      <li>Položte telefon na skříň hodin nebo těsně k ní, mikrofonem ke strojku. Ztište okolí.</li>
-      <li>Měřte aspoň 60 sekund. Čím déle, tím užší nejistota. Výsledek je spolehlivý, když nejistota klesne pod 0,3 %.</li>
-      <li>Uložte měření s poznámkou. Pak posuňte spodek skříně o 1–2 mm do strany (nebo podložte jeden roh), nechte kyvadlo 30 s ustálit, stiskněte <b>Nové měření</b> a měřte znovu.</li>
-      <li>Když se odchylka zmenšila, pokračujte stejným směrem. Když se zvětšila nebo se ručička přehoupla na druhou stranu stupnice, vraťte se a dělejte menší kroky.</li>
+      <li data-i18n-html="g1"></li>
+      <li data-i18n-html="g2"></li>
+      <li data-i18n-html="g3"></li>
+      <li data-i18n-html="g4"></li>
     </ol>
     <div class="scale">
-      <span class="mono" style="color:var(--good)">pod 1 %</span><span>v taktu, uchem nerozeznatelné</span>
-      <span class="mono" style="color:var(--fine)">1–3 %</span><span>dobré, pozorné ucho může něco slyšet</span>
-      <span class="mono" style="color:var(--warn)">3–6 %</span><span>slyšitelné kulhání</span>
-      <span class="mono" style="color:var(--bad)">nad 6 %</span><span>výrazné kulhání, hodiny se mohou zastavit</span>
+      <span class="mono" style="color:var(--good)" data-i18n="s1k"></span><span data-i18n="s1"></span>
+      <span class="mono" style="color:var(--fine)">1–3 %</span><span data-i18n="s2"></span>
+      <span class="mono" style="color:var(--warn)">3–6 %</span><span data-i18n="s3"></span>
+      <span class="mono" style="color:var(--bad)" data-i18n="s4k"></span><span data-i18n="s4"></span>
     </div>
-    <p class="note">Aplikace měří okamžiky úderů krokového ústrojí, ne přímo úvrať kyvadla. Rovnoměrnost tiku a taku je ale přesně to, co určuje, zda hodiny kulhají. Které údery jsou A a B se pozná podle hlasitosti; když jsou skoro stejně hlasité, porovnávejte jen velikost odchylky, ne stranu. U hodin pevně přišroubovaných ke zdi se takt hodinářsky seřizuje přihnutím vidličky.</p>
-    <p class="note">Bez mikrofonu: nahrajte tikot diktafonem v telefonu (aspoň minutu) a použijte <b>Nahrát záznam</b>.</p>
+    <p class="note" data-i18n="note1"></p>
+    <p class="note" data-i18n-html="note2"></p>
   </section>
 </main>
 
 <script>
 (() => {
+const I18N = {
+  en: {
+    sub: 'Listens to a pendulum clock and measures whether the tick→tock interval equals tock→tick. Use the result to adjust the clock’s tilt until it stops limping.',
+    kDiff: 'Interval difference', kCi: 'Uncertainty (95 %)', kPairs: 'Beat pairs',
+    plateAria: 'Beat scale from −10 to +10 percent',
+    legL: 'B→A longer', legC: 'in beat', legR: 'A→B longer',
+    btnMicStart: 'Listen with microphone', btnMicStop: 'Stop listening',
+    btnFile: 'Load recording', btnDemo: 'Demo', btnReset: 'New measurement',
+    sensLabel: 'Tick detection sensitivity', sensOut: 'threshold {v}× noise', sensAuto: 'auto: threshold {v}× noise', auto: 'Auto', manual: 'Manual', sensMode: 'Sensitivity mode',
+    hSignal: 'Signal', capSignal: 'last 4 s · <b class="ka">A</b> louder tick, <b class="kb">B</b> quieter',
+    traceAria: 'Sound envelope with detected ticks',
+    figsAria: 'Measured values',
+    fAB: 'Interval A→B', fBA: 'Interval B→A', fBph: 'Beats per hour', fT: 'Pendulum period',
+    fL: 'Theoretical pendulum length', fSd: 'Spread (SD)', fLoud: 'A / B distinction', fOut: 'Rejected pairs',
+    loud: 'A {x} % louder',
+    hSeries: 'Error over time', capSeries: 'dots = single pairs, line = running mean, green band = ±1 %',
+    seriesAria: 'Chart of beat error over time',
+    hLog: 'Adjustment log', capLog: 'saved in this browser only',
+    notePh: 'What you changed, e.g. case bottom moved 2 mm right', btnSave: 'Save measurement',
+    thTime: 'Time', thNote: 'Note', thErr: 'Error', thPairs: 'Pairs', thCmp: 'Vs. previous',
+    logEmpty: 'Nothing saved yet. After each measurement, save the result with a note on what you changed on the clock.',
+    del: 'Delete', delAria: 'Delete measurement',
+    cmpSame: 'no change ({d} %)', cmpBetter: 'better by {d} %', cmpWorse: 'worse by {d} %',
+    hGuide: 'How to measure and adjust',
+    g1: 'Place the phone on the clock case or right next to it, microphone towards the movement. Keep the room quiet.',
+    g2: 'Measure for at least 60 seconds. The longer you measure, the narrower the uncertainty. The result is reliable once the uncertainty drops below 0.3 %.',
+    g3: 'Save the measurement with a note. Then shift the bottom of the case 1–2 mm sideways (or shim one corner), let the pendulum settle for 30 s, press <b>New measurement</b> and measure again.',
+    g4: 'If the error got smaller, keep going the same way. If it grew, or the needle swung to the other side of the scale, go back and take smaller steps.',
+    s1k: 'below 1 %', s1: 'in beat, inaudible',
+    s2: 'good, a keen ear may notice',
+    s3: 'audible limp',
+    s4k: 'over 6 %', s4: 'strong limp, the clock may stop',
+    note1: 'The app times the ticks of the escapement, not the pendulum’s turning points directly. The evenness of tick and tock is exactly what makes a clock limp, though. Ticks A and B are told apart by loudness; when they are about equally loud, compare only the size of the error, not its side. On a clock screwed firmly to the wall, a clockmaker sets the beat by bending the crutch.',
+    note2: 'Without a microphone: record the ticking with your phone’s voice recorder (at least a minute) and use <b>Load recording</b>.',
+    pillOk: 'In beat', pillFine: 'Good', pillWarn: 'Audible limp', pillBad: 'Strong limp', pillListen: 'Listening…',
+    advListen: 'Listening. I need at least 10 beat pairs, about 15–30 seconds. If no vertical lines appear in the signal, move the phone closer to the movement.',
+    advIdle: 'Start listening with the microphone, load a recording of the ticking, or play the demo.',
+    advCollect: 'Collecting data. The result becomes reliable after 10 or more beat pairs.',
+    advIn: 'The clock is in beat. Interval {longer} is longer by only {ms} ms, which the ear cannot tell. Nothing to change.',
+    advOut: 'Interval {longer} is longer by {ms} ms ({pct} % of a beat). Save the measurement, shift the bottom of the case 1–2 mm sideways and measure again. If the error grows, shift it the other way.',
+    advWide: ' The uncertainty is still large, keep measuring.',
+    advSimilar: ' Ticks A and B are almost equally loud, so between measurements compare only the size of the error, not its side.',
+    srcDemo: 'Demo · simulated clock 4 % out of beat', srcLive: 'Live from microphone', srcLiveNew: 'Live from microphone · new measurement',
+    srcStopped: 'Listening stopped', srcProc: 'Processing {name}…',
+    noMic: 'The microphone isn’t available here. Allow it in your browser settings (lock icon next to the address → Permissions → Microphone) and try again. In the claude.ai preview the browser never allows it; record the ticking with your phone’s voice recorder and use Load recording instead.',
+    micFail: 'Could not start microphone audio: {e}',
+    short: 'The recording is short ({s} s). For a reliable result, record at least a minute.',
+    badFile: 'Could not read the file. Use a common audio format such as m4a, mp3 or wav.',
+    noData: 'No data yet', noSignal: 'No signal'
+  },
+  cs: {
+    sub: 'Poslouchá tikot kyvadlových hodin a měří, zda je interval tik→tak stejný jako tak→tik. Podle výsledku srovnáte náklon hodin, aby nekulhaly.',
+    kDiff: 'Rozdíl intervalů', kCi: 'Nejistota 95 %', kPairs: 'Párů úderů',
+    plateAria: 'Stupnice nerovnoměrnosti tikotu od −10 do +10 procent',
+    legL: 'B→A delší', legC: 'v taktu', legR: 'A→B delší',
+    btnMicStart: 'Poslouchat mikrofonem', btnMicStop: 'Zastavit poslech',
+    btnFile: 'Nahrát záznam', btnDemo: 'Ukázka', btnReset: 'Nové měření',
+    sensLabel: 'Citlivost detekce úderů', sensOut: 'práh {v}× šum', sensAuto: 'automaticky: práh {v}× šum', auto: 'Automaticky', manual: 'Manuálně', sensMode: 'Režim citlivosti',
+    hSignal: 'Signál', capSignal: 'poslední 4 s · <b class="ka">A</b> hlasitější úder, <b class="kb">B</b> tišší',
+    traceAria: 'Obálka zvuku s vyznačenými údery',
+    figsAria: 'Naměřené hodnoty',
+    fAB: 'Interval A→B', fBA: 'Interval B→A', fBph: 'Údery za hodinu', fT: 'Perioda kyvadla',
+    fL: 'Teoretická délka kyvadla', fSd: 'Rozptyl (SD)', fLoud: 'Rozlišení A / B', fOut: 'Vyřazené páry',
+    loud: 'A o {x} % hlasitější',
+    hSeries: 'Vývoj odchylky', capSeries: 'body = jednotlivé páry, čára = průběžný průměr, zelený pás = ±1 %',
+    seriesAria: 'Graf odchylky v čase',
+    hLog: 'Seřizování', capLog: 'ukládá se jen v tomto prohlížeči',
+    notePh: 'Co jste změnili, např. spodek skříně o 2 mm doprava', btnSave: 'Uložit měření',
+    thTime: 'Čas', thNote: 'Poznámka', thErr: 'Odchylka', thPairs: 'Párů', thCmp: 'Oproti předchozímu',
+    logEmpty: 'Zatím nic uloženého. Po každém měření uložte výsledek s poznámkou, co jste na hodinách změnili.',
+    del: 'Smazat', delAria: 'Smazat měření',
+    cmpSame: 'beze změny ({d} %)', cmpBetter: 'lepší o {d} %', cmpWorse: 'horší o {d} %',
+    hGuide: 'Jak měřit a seřídit',
+    g1: 'Položte telefon na skříň hodin nebo těsně k ní, mikrofonem ke strojku. Ztište okolí.',
+    g2: 'Měřte aspoň 60 sekund. Čím déle, tím užší nejistota. Výsledek je spolehlivý, když nejistota klesne pod 0,3 %.',
+    g3: 'Uložte měření s poznámkou. Pak posuňte spodek skříně o 1–2 mm do strany (nebo podložte jeden roh), nechte kyvadlo 30 s ustálit, stiskněte <b>Nové měření</b> a měřte znovu.',
+    g4: 'Když se odchylka zmenšila, pokračujte stejným směrem. Když se zvětšila nebo se ručička přehoupla na druhou stranu stupnice, vraťte se a dělejte menší kroky.',
+    s1k: 'pod 1 %', s1: 'v taktu, uchem nerozeznatelné',
+    s2: 'dobré, pozorné ucho může něco slyšet',
+    s3: 'slyšitelné kulhání',
+    s4k: 'nad 6 %', s4: 'výrazné kulhání, hodiny se mohou zastavit',
+    note1: 'Aplikace měří okamžiky úderů krokového ústrojí, ne přímo úvrať kyvadla. Rovnoměrnost tiku a taku je ale přesně to, co určuje, zda hodiny kulhají. Které údery jsou A a B se pozná podle hlasitosti; když jsou skoro stejně hlasité, porovnávejte jen velikost odchylky, ne stranu. U hodin pevně přišroubovaných ke zdi se takt hodinářsky seřizuje přihnutím vidličky.',
+    note2: 'Bez mikrofonu: nahrajte tikot diktafonem v telefonu (aspoň minutu) a použijte <b>Nahrát záznam</b>.',
+    pillOk: 'V taktu', pillFine: 'Dobré', pillWarn: 'Slyšitelné kulhání', pillBad: 'Výrazné kulhání', pillListen: 'Poslouchám…',
+    advListen: 'Poslouchám. Potřebuji aspoň 10 párů úderů, to je asi 15–30 sekund. Když se v signálu neobjevují svislé čáry, posuňte telefon blíž ke strojku.',
+    advIdle: 'Spusťte poslech mikrofonem, nahrajte záznam tikotu, nebo si pusťte ukázku.',
+    advCollect: 'Sbírám data. Výsledek bude spolehlivý po 10 a více párech úderů.',
+    advIn: 'Hodiny tikají do taktu. Interval {longer} je delší jen o {ms} ms, to ucho nerozezná. Není co měnit.',
+    advOut: 'Interval {longer} je delší o {ms} ms ({pct} % úderu). Uložte měření, posuňte spodek skříně o 1–2 mm do strany a změřte znovu. Pokud se odchylka zvětší, posuňte na opačnou stranu.',
+    advWide: ' Nejistota je zatím velká, měřte déle.',
+    advSimilar: ' Údery A a B jsou skoro stejně hlasité, proto mezi měřeními porovnávejte jen velikost odchylky, ne stranu.',
+    srcDemo: 'Ukázka · simulované hodiny s kulháním 4 %', srcLive: 'Živě z mikrofonu', srcLiveNew: 'Živě z mikrofonu · nové měření',
+    srcStopped: 'Poslech zastaven', srcProc: 'Zpracovávám {name}…',
+    noMic: 'Mikrofon tu není k dispozici. Povolte ho v nastavení prohlížeče (ikona zámku vedle adresy → Oprávnění → Mikrofon) a zkuste to znovu. V náhledu na claude.ai ho prohlížeč nepovolí nikdy; nahrajte tikot diktafonem v telefonu a použijte Nahrát záznam.',
+    micFail: 'Zvuk z mikrofonu se nepodařilo spustit: {e}',
+    short: 'Záznam je krátký ({s} s). Pro spolehlivý výsledek nahrajte aspoň minutu.',
+    badFile: 'Soubor se nepodařilo přečíst. Použijte běžný zvukový formát, například m4a, mp3 nebo wav.',
+    noData: 'Zatím žádná data', noSignal: 'Žádný signál'
+  }
+};
+const LANG_KEY = 'ttm.lang';
+let LANG = 'en';
+try { const l = localStorage.getItem(LANG_KEY); if (l && I18N[l]) LANG = l; } catch (e) {}
+const LOCALE = () => LANG === 'cs' ? 'cs-CZ' : 'en-GB';
+const t = (k, p) => { let s = (I18N[LANG][k] ?? I18N.en[k] ?? k); if (p) for (const [a, b] of Object.entries(p)) s = s.split('{' + a + '}').join(b); return s; };
+
 const $ = id => document.getElementById(id);
 const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
-const fmt = (v, d = 1) => Number.isFinite(v) ? v.toLocaleString('cs-CZ', {minimumFractionDigits: d, maximumFractionDigits: d}) : '—';
+const fmt = (v, d = 1) => Number.isFinite(v) ? v.toLocaleString(LOCALE(), {minimumFractionDigits: d, maximumFractionDigits: d}) : '—';
 const sfmt = (v, d = 1) => !Number.isFinite(v) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), d);
 
 /* ---------- signal processing ---------- */
@@ -298,7 +410,10 @@ function analyze(ev) {
     const me = pe / (ne || 1), mo = po / (no || 1), loudP = me >= mo ? 0 : 1;
     loudSum += Math.max(pe, po); quietSum += Math.min(pe, po) === pe ? pe : po;
     loudCnt += loudP === 0 ? ne : no; quietCnt += loudP === 0 ? no : ne;
-    if (si === segs.length - 1) out.marks = seg.slice(-14).map(e => ({t: e.t, loud: e.k % 2 === loudP}));
+    if (si === segs.length - 1) {
+      out.marks = seg.slice(-14).map(e => ({t: e.t, loud: e.k % 2 === loudP}));
+      out.qPeak = median(seg.filter(e => e.k % 2 !== loudP).slice(-20).map(e => e.peak));
+    }
     for (let j = 1; j + 1 < seg.length; j++) {
       const a = seg[j - 1], b = seg[j], c = seg[j + 1];
       if (b.k - a.k !== 1 || c.k - b.k !== 1 || a.k % 2 !== loudP) continue;
@@ -331,25 +446,44 @@ function analyze(ev) {
 /* ---------- state ---------- */
 let det = null, events = [], stats = null, mode = 'idle';
 let actx = null, stream = null, proc = null, wake = null, timer = null, raf = 0;
+let srcState = null, msgState = null;
 
+let autoSens = true;
+try { autoSens = localStorage.getItem('ttm.sensMode') !== 'manual'; } catch (e) {}
 function newDetector(rate) {
   det = new TickDetector(rate, e => events.push(e));
-  det.sens = +$('sens').value;
+  det.sens = autoSens ? 6 : +$('sens').value;
 }
-function setSource(t) { $('srcLabel').textContent = t; }
-function showMsg(t) { $('msg').textContent = t || ''; $('msg').hidden = !t; }
+// Auto mode: put the threshold between the noise floor and the quieter tick (geometric middle, at most 40 % of that tick).
+function autoTune(s) {
+  if (!autoSens || !det) return;
+  const now = det.n / det.sr, last = events.length ? events[events.length - 1].t : -1e9;
+  let recent = 0; for (let i = events.length - 1; i >= 0 && events[i].t > now - 5; i--) recent++;
+  let target = det.sens;
+  if (s && Number.isFinite(s.qPeak) && det.floor > 0 && now - last < 3) { const r = s.qPeak / det.floor; target = Math.min(Math.sqrt(r), 0.4 * r); }
+  else if (now - last > 3) target = det.sens * 0.8;
+  if (recent > 40) target = det.sens * 1.25;
+  target = Math.max(3, Math.min(20, target));
+  det.sens += (target - det.sens) * 0.4;
+  paintSens();
+}
+function setSource(k, p, suffix) { srcState = (k || suffix) ? {k, p, suffix} : null; paintSource(); }
+function paintSource() { $('srcLabel').textContent = srcState ? (srcState.k ? t(srcState.k, srcState.p) : '') + (srcState.suffix || '') : '—'; }
+function showMsg(k, p) { msgState = k ? {k, p} : null; paintMsg(); }
+function paintMsg() { $('msg').textContent = msgState ? t(msgState.k, msgState.p) : ''; $('msg').hidden = !msgState; }
 
 function classify(p) {
   const a = Math.abs(p);
-  if (a < 1) return ['ok', 'V taktu'];
-  if (a < 3) return ['fine', 'Dobré'];
-  if (a < 6) return ['warn', 'Slyšitelné kulhání'];
-  return ['bad', 'Výrazné kulhání'];
+  if (a < 1) return ['ok', 'pillOk'];
+  if (a < 3) return ['fine', 'pillFine'];
+  if (a < 6) return ['warn', 'pillWarn'];
+  return ['bad', 'pillBad'];
 }
 
 function update() {
   stats = analyze(events);
   if (det && Number.isFinite(stats.beatGuess) && events.length > 8) det.refr = Math.round(Math.max(0.08, 0.4 * stats.beatGuess) * det.sr);
+  autoTune(stats);
   render();
 }
 
@@ -361,8 +495,8 @@ function render() {
   $('bigCi').textContent = Number.isFinite(s.ci) ? '± ' + fmt(s.ci, 2) + ' %' : '—';
   $('bigN').textContent = s.n || '—';
   const pill = $('pill');
-  if (solid) { const [c, t] = classify(s.pct); pill.className = 'pill ' + c; pill.textContent = t; }
-  else { pill.className = 'pill'; pill.textContent = mode === 'mic' ? 'Poslouchám…' : '—'; }
+  if (solid) { const [c, k] = classify(s.pct); pill.className = 'pill ' + c; pill.textContent = t(k); }
+  else { pill.className = 'pill'; pill.textContent = mode === 'mic' ? t('pillListen') : '—'; }
 
   $('fAB').textContent = has ? fmt(s.dAB * 1000, 1) + ' ms' : '—';
   $('fBA').textContent = has ? fmt(s.dBA * 1000, 1) + ' ms' : '—';
@@ -370,20 +504,17 @@ function render() {
   $('fT').textContent = has ? fmt(s.T, 3) + ' s' : '—';
   $('fL').textContent = has ? '≈ ' + fmt(s.L * 100, 1) + ' cm' : '—';
   $('fSd').textContent = Number.isFinite(s.sd) ? fmt(s.sd, 2) + ' %' : '—';
-  $('fLoud').textContent = has ? 'A o ' + fmt((s.loudRatio - 1) * 100, 0) + ' % hlasitější' : '—';
+  $('fLoud').textContent = has ? t('loud', {x: fmt((s.loudRatio - 1) * 100, 0)}) : '—';
   $('fOut').textContent = has ? String(s.outliers) : '—';
 
   let adv;
-  if (!has) adv = mode === 'mic'
-    ? 'Poslouchám. Potřebuji aspoň 10 párů úderů, to je asi 15–30 sekund. Když se v signálu neobjevují svislé čáry, posuňte telefon blíž nebo zvyšte citlivost.'
-    : 'Spusťte poslech mikrofonem, nahrajte záznam tikotu, nebo si pusťte ukázku.';
-  else if (!solid) adv = 'Sbírám data. Výsledek bude spolehlivý po 10 a více párech úderů.';
+  if (!has) adv = t(mode === 'mic' ? 'advListen' : 'advIdle');
+  else if (!solid) adv = t('advCollect');
   else {
-    const a = Math.abs(s.pct), longer = s.pct > 0 ? 'A→B' : 'B→A';
-    if (a < 1) adv = `Hodiny tikají do taktu. Interval ${longer} je delší jen o ${fmt(Math.abs(s.ms), 1)} ms, to ucho nerozezná. Není co měnit.`;
-    else adv = `Interval ${longer} je delší o ${fmt(Math.abs(s.ms), 1)} ms (${fmt(a, 1)} % úderu). Uložte měření, posuňte spodek skříně o 1–2 mm do strany a změřte znovu. Pokud se odchylka zvětší, posuňte na opačnou stranu.`;
-    if (Number.isFinite(s.ci) && s.ci > 0.5) adv += ' Nejistota je zatím velká, měřte déle.';
-    if (s.loudRatio < 1.12) adv += ' Údery A a B jsou skoro stejně hlasité, proto mezi měřeními porovnávejte jen velikost odchylky, ne stranu.';
+    const a = Math.abs(s.pct), p = {longer: s.pct > 0 ? 'A→B' : 'B→A', ms: fmt(Math.abs(s.ms), 1), pct: fmt(a, 1)};
+    adv = t(a < 1 ? 'advIn' : 'advOut', p);
+    if (Number.isFinite(s.ci) && s.ci > 0.5) adv += t('advWide');
+    if (s.loudRatio < 1.12) adv += t('advSimilar');
   }
   $('advice').textContent = adv;
   $('btnSave').disabled = !solid;
@@ -419,7 +550,7 @@ function prep(c, h) {
 function drawTrace() {
   const {g, W, H} = prep($('trace'), 112);
   const mono = '10.5px ' + css('--mono');
-  if (!det) { g.fillStyle = css('--muted'); g.font = mono; g.fillText('Žádný signál', 12, H / 2); return; }
+  if (!det) { g.fillStyle = css('--muted'); g.font = mono; g.fillText(t('noSignal'), 12, H / 2); return; }
   const end = det.traceBin, start = end - TRACE_BINS;
   let mx = 1e-9; for (let i = Math.max(0, start); i < end; i++) mx = Math.max(mx, det.trace[i % TRACE_BINS]);
   const base = H - 6, top = 16, yv = v => base - Math.sqrt(Math.min(1, v / mx)) * (base - top);
@@ -443,7 +574,7 @@ function drawSeries(s) {
   const mono = '10.5px ' + css('--mono'), muted = css('--muted');
   g.font = mono;
   const P = (s && s.pairs) || [];
-  if (P.length < 2) { g.fillStyle = muted; g.fillText('Zatím žádná data', 12, H / 2); return; }
+  if (P.length < 2) { g.fillStyle = muted; g.fillText(t('noData'), 12, H / 2); return; }
   const pad = {l: 42, r: 12, t: 10, b: 22};
   const t0 = P[0].t, t1 = Math.max(P[P.length - 1].t, t0 + 1);
   let ym = Math.max(2, ...P.filter(p => !p.out).map(p => Math.abs(p.pct)));
@@ -473,15 +604,13 @@ function drawSeries(s) {
 }
 
 /* ---------- sources ---------- */
-const NO_MIC = 'Mikrofon tu není k dispozici. Povolte ho v nastavení prohlížeče (ikona zámku vedle adresy → Oprávnění → Mikrofon) a zkuste to znovu. Případně nahrajte tikot diktafonem v telefonu a použijte Nahrát záznam.';
-
 async function startMic() {
   if (mode === 'mic') { stopMic(); return; }
-  showMsg('');
-  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showMsg(NO_MIC); return; }
+  showMsg(null);
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showMsg('noMic'); return; }
   try {
     stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
-  } catch (e) { showMsg(NO_MIC); return; }
+  } catch (e) { showMsg('noMic'); return; }
   try {
     actx = new (window.AudioContext || window.webkitAudioContext)();
     await actx.resume();
@@ -491,9 +620,9 @@ async function startMic() {
     newDetector(actx.sampleRate); events = []; stats = null;
     proc.onaudioprocess = ev => det.process(ev.inputBuffer.getChannelData(0));
     src.connect(proc); proc.connect(mute); mute.connect(actx.destination);
-  } catch (e) { showMsg('Zvuk z mikrofonu se nepodařilo spustit: ' + (e.message || e)); stopMic(); return; }
-  mode = 'mic'; setSource('Živě z mikrofonu');
-  const b = $('btnMic'); b.textContent = 'Zastavit poslech'; b.classList.add('live');
+  } catch (e) { showMsg('micFail', {e: e.message || String(e)}); stopMic(); return; }
+  mode = 'mic'; setSource('srcLive');
+  paintMicButton();
   try { wake = await navigator.wakeLock?.request('screen'); } catch (e) { wake = null; }
   timer = setInterval(update, 300);
   const loop = () => { drawTrace(); raf = requestAnimationFrame(loop); }; loop();
@@ -502,42 +631,49 @@ async function startMic() {
 function stopMic() {
   clearInterval(timer); cancelAnimationFrame(raf);
   try { proc && proc.disconnect(); } catch (e) {}
-  try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  try { stream && stream.getTracks().forEach(tr => tr.stop()); } catch (e) {}
   try { actx && actx.close(); } catch (e) {}
   try { wake && wake.release(); } catch (e) {}
   proc = stream = actx = wake = null;
-  if (mode === 'mic') { mode = 'idle'; setSource('Poslech zastaven'); }
-  const b = $('btnMic'); b.textContent = 'Poslouchat mikrofonem'; b.classList.remove('live');
+  if (mode === 'mic') { mode = 'idle'; setSource('srcStopped'); }
+  paintMicButton();
   update(); drawTrace();
 }
+function paintMicButton() {
+  const b = $('btnMic'), live = mode === 'mic';
+  b.textContent = t(live ? 'btnMicStop' : 'btnMicStart'); b.classList.toggle('live', live);
+}
 
-async function runBuffer(data, rate, label) {
+async function runBuffer(data, rate, src) {
   newDetector(rate); events = []; stats = null;
   const prog = $('progress'), bar = $('progBar'); prog.hidden = false;
   const chunk = rate * 3;
   for (let i = 0; i < data.length; i += chunk) {
     det.process(data.subarray(i, Math.min(i + chunk, data.length)));
-    if (events.length > 8) { const s = analyze(events); if (Number.isFinite(s.beatGuess)) det.refr = Math.round(Math.max(0.08, 0.4 * s.beatGuess) * rate); }
+    const s = events.length > 5 ? analyze(events) : null;
+    if (s && events.length > 8 && Number.isFinite(s.beatGuess)) det.refr = Math.round(Math.max(0.08, 0.4 * s.beatGuess) * rate);
+    autoTune(s);
     bar.style.width = (Math.min(1, (i + chunk) / data.length) * 100) + '%';
     await new Promise(r => setTimeout(r, 0));
   }
   prog.hidden = true; bar.style.width = '0';
-  mode = 'idle'; setSource(label + ' · ' + fmt(data.length / rate, 0) + ' s');
+  mode = 'idle';
+  setSource(src.k, src.p, (src.suffix || '') + ' · ' + Math.round(data.length / rate) + ' s');
   update(); drawTrace();
 }
 
 async function loadFile(f) {
   if (!f) return;
   if (mode === 'mic') stopMic();
-  showMsg(''); setSource('Zpracovávám ' + f.name + '…');
+  showMsg(null); setSource('srcProc', {name: f.name});
   try {
     const buf = await f.arrayBuffer();
     const ac = new (window.AudioContext || window.webkitAudioContext)();
     const ab = await new Promise((res, rej) => { const p = ac.decodeAudioData(buf, res, rej); if (p && p.then) p.then(res, rej); });
     try { ac.close(); } catch (e) {}
-    if (ab.duration < 10) showMsg('Záznam je krátký (' + fmt(ab.duration, 0) + ' s). Pro spolehlivý výsledek nahrajte aspoň minutu.');
-    await runBuffer(ab.getChannelData(0), ab.sampleRate, f.name);
-  } catch (e) { showMsg('Soubor se nepodařilo přečíst. Použijte běžný zvukový formát, například m4a, mp3 nebo wav.'); setSource('—'); }
+    if (ab.duration < 10) showMsg('short', {s: Math.round(ab.duration)});
+    await runBuffer(ab.getChannelData(0), ab.sampleRate, {suffix: f.name});
+  } catch (e) { showMsg('badFile'); setSource(null); }
 }
 
 function synthDemo() {
@@ -546,29 +682,29 @@ function synthDemo() {
   const gauss = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
   for (let i = 0; i < n; i++) x[i] = 0.004 * gauss() + 0.012 * Math.sin(2 * Math.PI * 50 * i / rate);
   const AB = 0.7800, BA = 0.7200; // 4 % out of beat, 4800 beats/hour
-  let t = 0.6, loud = true;
+  let tt0 = 0.6, loud = true;
   const click = (t0, amp, f) => {
     const i0 = Math.round(t0 * rate), len = Math.round(0.03 * rate);
     for (let j = 0; j < len && i0 + j < n; j++) { const tt = j / rate, e = Math.exp(-tt / 0.0035); x[i0 + j] += amp * e * (0.65 * Math.sin(2 * Math.PI * f * tt) + 0.35 * gauss()); }
   };
-  while (t < dur - 0.2) {
-    const t0 = t + 0.00025 * gauss(), amp = loud ? 0.5 : 0.34;
+  while (tt0 < dur - 0.2) {
+    const t0 = tt0 + 0.00025 * gauss(), amp = loud ? 0.5 : 0.34;
     click(t0, amp, loud ? 3100 : 3600); click(t0 + 0.011, amp * 0.3, 2400);
-    t += loud ? AB : BA; loud = !loud;
+    tt0 += loud ? AB : BA; loud = !loud;
   }
   return {x, rate};
 }
 function runDemo() {
   if (mode === 'mic') stopMic();
-  showMsg('');
+  showMsg(null);
   const {x, rate} = synthDemo();
-  runBuffer(x, rate, 'Ukázka · simulované hodiny s kulháním 4 %');
+  runBuffer(x, rate, {k: 'srcDemo'});
 }
 
 function resetMeasurement() {
   events = []; stats = null;
-  if (mode === 'mic') { setSource('Živě z mikrofonu · nové měření'); }
-  else { det = null; setSource('—'); }
+  if (mode === 'mic') setSource('srcLiveNew');
+  else { det = null; setSource(null); }
   render(); drawTrace();
 }
 
@@ -578,21 +714,23 @@ const loadLog = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]
 const saveLog = l => { try { localStorage.setItem(KEY, JSON.stringify(l)); } catch (e) {} };
 let log = loadLog();
 function renderLog() {
-  const body = $('logBody');
-  if (!log.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Zatím nic uloženého. Po každém měření uložte výsledek s poznámkou, co jste na hodinách změnili.</td></tr>'; return; }
-  body.innerHTML = '';
+  const body = $('logBody'); body.innerHTML = '';
+  if (!log.length) {
+    const tr = document.createElement('tr'), td = document.createElement('td');
+    td.colSpan = 7; td.className = 'empty'; td.textContent = t('logEmpty'); tr.appendChild(td); body.appendChild(tr); return;
+  }
   log.forEach((r, i) => {
     const prev = log[i - 1]; let cmp = '<span class="same">—</span>';
     if (prev) {
       const dlt = Math.abs(r.pct) - Math.abs(prev.pct), unc = Math.hypot(r.ci || 0, prev.ci || 0);
-      cmp = Math.abs(dlt) <= unc ? `<span class="same">beze změny (${sfmt(dlt, 1)} %)</span>`
-          : dlt < 0 ? `<span class="better">lepší o ${fmt(-dlt, 1)} %</span>` : `<span class="worse">horší o ${fmt(dlt, 1)} %</span>`;
+      cmp = Math.abs(dlt) <= unc ? `<span class="same">${t('cmpSame', {d: sfmt(dlt, 1)})}</span>`
+          : dlt < 0 ? `<span class="better">${t('cmpBetter', {d: fmt(-dlt, 1)})}</span>` : `<span class="worse">${t('cmpWorse', {d: fmt(dlt, 1)})}</span>`;
     }
     const tr = document.createElement('tr');
     const d = new Date(r.ts);
-    tr.innerHTML = `<td class="num">${d.toLocaleString('cs-CZ', {day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
+    tr.innerHTML = `<td class="num">${d.toLocaleString(LOCALE(), {day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
       <td></td><td class="num">${sfmt(r.pct, 1)} %</td><td class="num">${Number.isFinite(r.ci) ? fmt(r.ci, 2) : '—'}</td>
-      <td class="num">${r.n}</td><td>${cmp}</td><td><button class="del" data-i="${i}" aria-label="Smazat měření">Smazat</button></td>`;
+      <td class="num">${r.n}</td><td>${cmp}</td><td><button class="del" data-i="${i}" aria-label="${t('delAria')}">${t('del')}</button></td>`;
     tr.children[1].textContent = r.note || '—';
     body.appendChild(tr);
   });
@@ -607,13 +745,40 @@ $('logBody').addEventListener('click', e => {
   log.splice(+b.dataset.i, 1); saveLog(log); renderLog();
 });
 
+/* ---------- language ---------- */
+function paintSens() {
+  const sl = $('sens'); sl.disabled = autoSens;
+  if (autoSens) { const v = det ? det.sens : 6; sl.value = Math.round(v); $('sensOut').textContent = t('sensAuto', {v: fmt(v, 1)}); }
+  else $('sensOut').textContent = t('sensOut', {v: sl.value});
+  document.querySelectorAll('.seg button').forEach(b => b.setAttribute('aria-pressed', String((b.dataset.mode === 'auto') === autoSens)));
+}
+document.querySelectorAll('.seg button').forEach(b => b.addEventListener('click', () => {
+  autoSens = b.dataset.mode === 'auto';
+  try { localStorage.setItem('ttm.sensMode', autoSens ? 'auto' : 'manual'); } catch (e) {}
+  if (!autoSens && det) det.sens = +$('sens').value;
+  paintSens();
+}));
+function applyLang() {
+  document.documentElement.lang = LANG;
+  document.querySelectorAll('[data-i18n]').forEach(el => el.textContent = t(el.dataset.i18n));
+  document.querySelectorAll('[data-i18n-html]').forEach(el => el.innerHTML = t(el.dataset.i18nHtml));
+  document.querySelectorAll('[data-i18n-ph]').forEach(el => el.placeholder = t(el.dataset.i18nPh));
+  document.querySelectorAll('[data-i18n-aria]').forEach(el => el.setAttribute('aria-label', t(el.dataset.i18nAria)));
+  document.querySelectorAll('.lang button').forEach(b => b.setAttribute('aria-pressed', String(b.dataset.lang === LANG)));
+  paintMicButton(); paintSens(); paintSource(); paintMsg(); renderLog(); render(); drawTrace();
+}
+document.querySelectorAll('.lang button').forEach(b => b.addEventListener('click', () => {
+  LANG = b.dataset.lang; try { localStorage.setItem(LANG_KEY, LANG); } catch (e) {}
+  applyLang();
+}));
+
 /* ---------- wiring ---------- */
 $('btnMic').addEventListener('click', startMic);
 $('btnFile').addEventListener('click', () => $('file').click());
 $('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
 $('btnDemo').addEventListener('click', runDemo);
 $('btnReset').addEventListener('click', resetMeasurement);
-$('sens').addEventListener('input', e => { const v = +e.target.value; $('sensOut').textContent = 'práh ' + v + '× šum'; if (det) det.sens = v; });
+$('sens').addEventListener('input', e => { paintSens(); if (det) det.sens = +e.target.value; });
 
 const redraw = () => { drawPlate(stats); drawSeries(stats); drawTrace(); };
 try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
@@ -621,10 +786,9 @@ new MutationObserver(redraw).observe(document.documentElement, {attributes: true
 let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 120); });
 document.addEventListener('visibilitychange', async () => { if (mode === 'mic' && document.visibilityState === 'visible' && !wake) { try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {} } });
 
-renderLog(); render();
+applyLang();
 runDemo();
 })();
 </script>
-
 <script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
 </body></html>
