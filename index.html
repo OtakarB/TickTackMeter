@@ -1,0 +1,630 @@
+<!doctype html>
+<html lang="cs"><head><meta charset="utf-8"><meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"><meta name="theme-color" content="#1D5C52"><style>:root{padding-top:env(safe-area-inset-top,0px);padding-bottom:env(safe-area-inset-bottom,0px)}body{margin:0}img{max-width:100%}[hidden]{display:none!important}</style>
+<title>Tikoměr</title><link rel="manifest" href="manifest.json"><link rel="icon" href="icon-192.png"><link rel="apple-touch-icon" href="icon-192.png"></head><body>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Instrument+Serif:ital@0;1&family=JetBrains+Mono:wght@400;600&family=Public+Sans:wght@400;500;600;700&display=swap">
+<style>
+/* Layout: single-column instrument panel — readout with beat plate first, then controls, live signal, figures, trend, adjustment log, guide. */
+:root{
+  --bg:#EDF0EB; --surface:#FAFBF8; --ink:#17201C; --muted:#5A6761; --line:#CED6D0;
+  --accent:#1D5C52; --accent-ink:#FFFFFF; --brass:#93661C;
+  --a:#1E7266; --b:#B07A1E; --trace:#8E9C95;
+  --good:#2E7A3A; --fine:#4F7F2A; --warn:#A8701A; --bad:#B03A2E;
+  --display:"Instrument Serif", Georgia, "Times New Roman", serif;
+  --body:"Public Sans", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono:"JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark){:root:not([data-theme="light"]){
+  --bg:#0F1412; --surface:#171E1B; --ink:#E6ECE8; --muted:#97A59E; --line:#2A3530;
+  --accent:#5DB5A6; --accent-ink:#0B1311; --brass:#D4A250;
+  --a:#5BBFAF; --b:#DDA94C; --trace:#55635C;
+  --good:#64C072; --fine:#9BC45E; --warn:#E2A847; --bad:#E5695B; color-scheme:dark}}
+:root[data-theme="dark"]{
+  --bg:#0F1412; --surface:#171E1B; --ink:#E6ECE8; --muted:#97A59E; --line:#2A3530;
+  --accent:#5DB5A6; --accent-ink:#0B1311; --brass:#D4A250;
+  --a:#5BBFAF; --b:#DDA94C; --trace:#55635C;
+  --good:#64C072; --fine:#9BC45E; --warn:#E2A847; --bad:#E5695B; color-scheme:dark}
+
+html,body{background:var(--bg)}
+body{color:var(--ink);font-family:var(--body);font-size:15px;line-height:1.5;padding-inline:16px;padding-block:20px 48px}
+.wrap{max-width:760px;margin:0 auto;display:flex;flex-direction:column;gap:18px}
+h1,h2{font-family:var(--display);font-weight:400;margin:0;text-wrap:balance;letter-spacing:.005em}
+h1{font-size:2.6rem;line-height:1}
+h2{font-size:1.55rem;line-height:1.1}
+p{margin:0}
+.sub{color:var(--muted);max-width:60ch;margin-top:6px}
+.eyebrow{font-family:var(--mono);font-size:.72rem;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+.cap{color:var(--muted);font-size:.88rem}
+.mono{font-family:var(--mono);font-variant-numeric:tabular-nums}
+.ka{color:var(--a)} .kb{color:var(--b)}
+
+.top{display:flex;align-items:flex-end;justify-content:space-between;gap:12px;flex-wrap:wrap}
+.top .mark{font-family:var(--mono);font-size:.75rem;color:var(--brass);letter-spacing:.06em}
+
+.readout{background:var(--surface);border:1px solid var(--line);border-radius:14px;padding:18px 18px 16px;display:flex;flex-direction:column;gap:14px}
+.ro-head{display:flex;justify-content:space-between;align-items:center;gap:10px;flex-wrap:wrap}
+.pill{font-size:.8rem;font-weight:600;padding:3px 10px;border-radius:999px;border:1px solid currentColor;color:var(--muted);white-space:nowrap}
+.pill.ok{color:var(--good)} .pill.fine{color:var(--fine)} .pill.warn{color:var(--warn)} .pill.bad{color:var(--bad)}
+.ro-main{display:flex;gap:18px 28px;align-items:flex-end;flex-wrap:wrap}
+.big{font-family:var(--display);font-size:4.6rem;line-height:.9;font-variant-numeric:tabular-nums;white-space:nowrap}
+.big .unit{font-size:2rem;color:var(--muted);margin-left:4px}
+.ro-side{display:grid;grid-template-columns:repeat(3,auto);gap:4px 22px;min-width:0}
+.ro-side div{display:flex;flex-direction:column}
+.k{font-size:.74rem;color:var(--muted)}
+.v{font-family:var(--mono);font-size:1rem;font-variant-numeric:tabular-nums}
+.plate svg{display:block;width:100%;height:auto;max-width:100%}
+.plate-legend{display:flex;justify-content:space-between;font-size:.74rem;color:var(--muted);margin-top:-2px}
+.z-good{fill:var(--good);opacity:.22} .z-warn{fill:var(--warn);opacity:.13}
+.t-min{stroke:var(--muted);stroke-width:1;opacity:.6} .t-maj{stroke:var(--ink);stroke-width:1.4}
+.t-lab{fill:var(--muted);font-family:var(--mono);font-size:10.5px}
+.needle{stroke:var(--brass);stroke-width:2.4;stroke-linecap:round} .needle-dot{fill:var(--brass)}
+.ci{fill:var(--brass);opacity:.35}
+.advice{border-top:1px solid var(--line);padding-top:12px;max-width:68ch}
+
+.controls{display:flex;flex-direction:column;gap:12px}
+.btns{display:flex;flex-wrap:wrap;gap:8px}
+button{font:inherit;font-weight:600;font-size:.92rem;border-radius:10px;padding:10px 16px;cursor:pointer;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+button.primary{background:var(--accent);border-color:var(--accent);color:var(--accent-ink)}
+button.primary.live{background:var(--bad);border-color:var(--bad);color:#fff}
+button.quiet{background:transparent}
+button:disabled{opacity:.45;cursor:not-allowed}
+button:focus-visible,input:focus-visible{outline:2px solid var(--brass);outline-offset:2px}
+.msg{background:var(--surface);border:1px solid var(--warn);border-radius:10px;padding:10px 12px;font-size:.9rem;max-width:70ch}
+.sens{display:flex;align-items:center;gap:12px;flex-wrap:wrap;font-size:.9rem;color:var(--muted)}
+.sens input{flex:1 1 160px;accent-color:var(--accent);max-width:280px}
+.progress{height:3px;background:var(--line);border-radius:2px;overflow:hidden}
+.progress span{display:block;height:100%;width:0;background:var(--accent);transition:width .1s}
+
+.panel{display:flex;flex-direction:column;gap:8px}
+.panel-head{display:flex;justify-content:space-between;align-items:baseline;gap:10px;flex-wrap:wrap}
+canvas{display:block;width:100%;background:var(--surface);border:1px solid var(--line);border-radius:10px}
+
+.figs{display:grid;grid-template-columns:repeat(4,minmax(0,1fr));gap:1px;background:var(--line);border:1px solid var(--line);border-radius:10px;overflow:hidden}
+.figs div{background:var(--surface);padding:10px 12px;display:flex;flex-direction:column;gap:2px;min-width:0}
+.figs .v{font-size:.98rem}
+@media (max-width:560px){.figs{grid-template-columns:repeat(2,minmax(0,1fr))}.ro-side{grid-template-columns:repeat(3,auto);gap:4px 14px}.big{font-size:3.8rem}}
+
+.log-form{display:flex;gap:8px;flex-wrap:wrap}
+.log-form input{flex:1 1 240px;min-width:0;font:inherit;padding:10px 12px;border-radius:10px;border:1px solid var(--line);background:var(--surface);color:var(--ink)}
+.tbl{overflow-x:auto;border:1px solid var(--line);border-radius:10px;background:var(--surface)}
+table{border-collapse:collapse;width:100%;font-size:.88rem}
+th,td{text-align:left;padding:8px 10px;border-bottom:1px solid var(--line);vertical-align:top}
+th{font-weight:600;font-size:.76rem;color:var(--muted)}
+tr:last-child td{border-bottom:0}
+td.num{font-family:var(--mono);font-variant-numeric:tabular-nums;white-space:nowrap}
+.better{color:var(--good)} .worse{color:var(--bad)} .same{color:var(--muted)}
+.del{padding:2px 8px;font-size:.78rem;font-weight:500;background:transparent}
+.empty{color:var(--muted);font-size:.9rem;padding:12px}
+
+.guide ol{margin:0;padding-left:1.3em;display:flex;flex-direction:column;gap:8px;max-width:68ch}
+.scale{display:grid;grid-template-columns:auto 1fr;gap:4px 14px;font-size:.9rem;max-width:520px}
+.scale .mono{white-space:nowrap}
+.note{font-size:.86rem;color:var(--muted);max-width:68ch}
+@media (prefers-reduced-motion: reduce){*{transition:none!important}}
+</style>
+
+<main class="wrap">
+  <header class="top">
+    <div>
+      <h1>Tikoměr</h1>
+      <p class="sub">Poslouchá tikot kyvadlových hodin a měří, zda je interval tik→tak stejný jako tak→tik. Podle výsledku srovnáte náklon hodin, aby nekulhaly.</p>
+    </div>
+    <span class="mark">BEAT · TAKT</span>
+  </header>
+
+  <section class="readout" aria-live="polite">
+    <div class="ro-head">
+      <span class="eyebrow" id="srcLabel">—</span>
+      <span class="pill" id="pill">—</span>
+    </div>
+    <div class="ro-main">
+      <div class="big"><span id="bigPct">—</span><span class="unit">%</span></div>
+      <div class="ro-side">
+        <div><span class="k">Rozdíl intervalů</span><span class="v" id="bigMs">—</span></div>
+        <div><span class="k">Nejistota 95 %</span><span class="v" id="bigCi">—</span></div>
+        <div><span class="k">Párů úderů</span><span class="v" id="bigN">—</span></div>
+      </div>
+    </div>
+    <div class="plate">
+      <svg id="plate" viewBox="0 0 400 62" role="img" aria-label="Stupnice nerovnoměrnosti tikotu od −10 do +10 procent"></svg>
+      <div class="plate-legend"><span>B→A delší</span><span>v taktu</span><span>A→B delší</span></div>
+    </div>
+    <p class="advice" id="advice"></p>
+  </section>
+
+  <section class="controls">
+    <div class="btns">
+      <button id="btnMic" class="primary">Poslouchat mikrofonem</button>
+      <button id="btnFile">Nahrát záznam</button>
+      <input type="file" id="file" accept="audio/*,video/*" hidden>
+      <button id="btnDemo" class="quiet">Ukázka</button>
+      <button id="btnReset" class="quiet">Nové měření</button>
+    </div>
+    <div class="progress" id="progress" hidden><span id="progBar"></span></div>
+    <p class="msg" id="msg" hidden></p>
+    <div class="sens">
+      <label for="sens">Citlivost detekce úderů</label>
+      <input type="range" id="sens" min="3" max="20" step="1" value="7">
+      <output id="sensOut" class="mono">práh 7× šum</output>
+    </div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Signál</h2><span class="cap">poslední 4 s · <b class="ka">A</b> hlasitější úder, <b class="kb">B</b> tišší</span></div>
+    <canvas id="trace" aria-label="Obálka zvuku s vyznačenými údery"></canvas>
+  </section>
+
+  <section class="figs" aria-label="Naměřené hodnoty">
+    <div><span class="k">Interval A→B</span><span class="v" id="fAB">—</span></div>
+    <div><span class="k">Interval B→A</span><span class="v" id="fBA">—</span></div>
+    <div><span class="k">Údery za hodinu</span><span class="v" id="fBph">—</span></div>
+    <div><span class="k">Perioda kyvadla</span><span class="v" id="fT">—</span></div>
+    <div><span class="k">Teoretická délka kyvadla</span><span class="v" id="fL">—</span></div>
+    <div><span class="k">Rozptyl (SD)</span><span class="v" id="fSd">—</span></div>
+    <div><span class="k">Rozlišení A / B</span><span class="v" id="fLoud">—</span></div>
+    <div><span class="k">Vyřazené páry</span><span class="v" id="fOut">—</span></div>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Vývoj odchylky</h2><span class="cap">body = jednotlivé páry, čára = průběžný průměr, zelený pás = ±1 %</span></div>
+    <canvas id="series" aria-label="Graf odchylky v čase"></canvas>
+  </section>
+
+  <section class="panel">
+    <div class="panel-head"><h2>Seřizování</h2><span class="cap">ukládá se jen v tomto prohlížeči</span></div>
+    <div class="log-form">
+      <input id="note" type="text" placeholder="Co jste změnili, např. spodek skříně o 2 mm doprava" autocomplete="off">
+      <button id="btnSave" disabled>Uložit měření</button>
+    </div>
+    <div class="tbl"><table>
+      <thead><tr><th>Čas</th><th>Poznámka</th><th>Odchylka</th><th>±95 %</th><th>Párů</th><th>Oproti předchozímu</th><th></th></tr></thead>
+      <tbody id="logBody"></tbody>
+    </table></div>
+  </section>
+
+  <section class="panel guide">
+    <h2>Jak měřit a seřídit</h2>
+    <ol>
+      <li>Položte telefon na skříň hodin nebo těsně k ní, mikrofonem ke strojku. Ztište okolí.</li>
+      <li>Měřte aspoň 60 sekund. Čím déle, tím užší nejistota. Výsledek je spolehlivý, když nejistota klesne pod 0,3 %.</li>
+      <li>Uložte měření s poznámkou. Pak posuňte spodek skříně o 1–2 mm do strany (nebo podložte jeden roh), nechte kyvadlo 30 s ustálit, stiskněte <b>Nové měření</b> a měřte znovu.</li>
+      <li>Když se odchylka zmenšila, pokračujte stejným směrem. Když se zvětšila nebo se ručička přehoupla na druhou stranu stupnice, vraťte se a dělejte menší kroky.</li>
+    </ol>
+    <div class="scale">
+      <span class="mono" style="color:var(--good)">pod 1 %</span><span>v taktu, uchem nerozeznatelné</span>
+      <span class="mono" style="color:var(--fine)">1–3 %</span><span>dobré, pozorné ucho může něco slyšet</span>
+      <span class="mono" style="color:var(--warn)">3–6 %</span><span>slyšitelné kulhání</span>
+      <span class="mono" style="color:var(--bad)">nad 6 %</span><span>výrazné kulhání, hodiny se mohou zastavit</span>
+    </div>
+    <p class="note">Aplikace měří okamžiky úderů krokového ústrojí, ne přímo úvrať kyvadla. Rovnoměrnost tiku a taku je ale přesně to, co určuje, zda hodiny kulhají. Které údery jsou A a B se pozná podle hlasitosti; když jsou skoro stejně hlasité, porovnávejte jen velikost odchylky, ne stranu. U hodin pevně přišroubovaných ke zdi se takt hodinářsky seřizuje přihnutím vidličky.</p>
+    <p class="note">Bez mikrofonu: nahrajte tikot diktafonem v telefonu (aspoň minutu) a použijte <b>Nahrát záznam</b>.</p>
+  </section>
+</main>
+
+<script>
+(() => {
+const $ = id => document.getElementById(id);
+const css = n => getComputedStyle(document.documentElement).getPropertyValue(n).trim();
+const fmt = (v, d = 1) => Number.isFinite(v) ? v.toLocaleString('cs-CZ', {minimumFractionDigits: d, maximumFractionDigits: d}) : '—';
+const sfmt = (v, d = 1) => !Number.isFinite(v) ? '—' : (v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), d);
+
+/* ---------- signal processing ---------- */
+class Biquad {
+  constructor(b0, b1, b2, a1, a2) { Object.assign(this, {b0, b1, b2, a1, a2}); this.x1 = this.x2 = this.y1 = this.y2 = 0; }
+  step(x) {
+    const y = this.b0 * x + this.b1 * this.x1 + this.b2 * this.x2 - this.a1 * this.y1 - this.a2 * this.y2;
+    this.x2 = this.x1; this.x1 = x; this.y2 = this.y1; this.y1 = y; return y;
+  }
+}
+function highpass(fs, f0, Q = Math.SQRT1_2) {
+  const w = 2 * Math.PI * f0 / fs, c = Math.cos(w), al = Math.sin(w) / (2 * Q), a0 = 1 + al;
+  return new Biquad((1 + c) / 2 / a0, -(1 + c) / a0, (1 + c) / 2 / a0, -2 * c / a0, (1 - al) / a0);
+}
+
+const TRACE_BINS = 800;
+class TickDetector {
+  constructor(sr, onTick) {
+    this.sr = sr; this.onTick = onTick;
+    this.f1 = highpass(sr, 1000); this.f2 = highpass(sr, 1000);
+    this.env = 0; this.dec = Math.exp(-1 / (0.004 * sr));
+    this.N = Math.ceil(0.25 * sr); this.ring = new Float32Array(this.N); this.n = 0;
+    this.floor = 0; this.warm = Math.round(0.3 * sr);
+    this.aFast = 1 / (0.05 * sr); this.aUp = 1 / (3 * sr); this.aDn = 1 / (0.3 * sr);
+    this.pending = null; this.lastN = -1e12; this.refr = Math.round(0.1 * sr); this.sens = 7;
+    this.binN = Math.round(0.005 * sr); this.binMax = 0; this.binCount = 0;
+    this.trace = new Float32Array(TRACE_BINS); this.traceBin = 0;
+  }
+  process(buf) {
+    const {N, ring, dec, f1, f2, sr} = this;
+    let env = this.env, n = this.n;
+    for (let i = 0; i < buf.length; i++, n++) {
+      const a = Math.abs(f2.step(f1.step(buf[i])));
+      env = a > env ? a : env * dec;
+      ring[n % N] = env;
+      if (n < this.warm) { this.floor += (env - this.floor) * this.aFast; }
+      else {
+        if (!this.pending && n - this.lastN > this.refr) this.floor += (env - this.floor) * (env > this.floor ? this.aUp : this.aDn);
+        const thr = Math.max(this.floor * this.sens, 1e-5);
+        if (this.pending) { if (n >= this.pending.end) { this.n = n; this.finalize(); } }
+        else if (n - this.lastN > this.refr && env > thr) this.pending = {start: n, end: n + Math.round(0.025 * sr)};
+      }
+      if (env > this.binMax) this.binMax = env;
+      if (++this.binCount >= this.binN) { this.trace[this.traceBin % TRACE_BINS] = this.binMax; this.traceBin++; this.binMax = 0; this.binCount = 0; }
+    }
+    this.env = env; this.n = n;
+  }
+  finalize() {
+    const {N, ring, sr} = this, p = this.pending, now = this.n;
+    let s = Math.max(p.start - Math.round(0.003 * sr), now - N + 1);
+    let pk = 0, pki = s;
+    for (let i = s; i <= now; i++) { const v = ring[i % N]; if (v > pk) { pk = v; pki = i; } }
+    const lv = Math.max(pk * 0.3, this.floor * 2);
+    let k = s; while (k < pki && ring[k % N] < lv) k++;
+    let t = k / sr;
+    if (k > s) { const e0 = ring[(k - 1) % N], e1 = ring[k % N]; t = (k - 1 + (e1 > e0 ? (lv - e0) / (e1 - e0) : 0)) / sr; }
+    this.onTick({t, peak: pk});
+    this.lastN = pki; this.pending = null;
+  }
+}
+
+/* ---------- statistics ---------- */
+const median = a => { if (!a.length) return NaN; const s = [...a].sort((x, y) => x - y), m = s.length >> 1; return s.length % 2 ? s[m] : (s[m - 1] + s[m]) / 2; };
+const T95 = [NaN, 12.71, 4.30, 3.18, 2.78, 2.57, 2.45, 2.36, 2.31, 2.26, 2.23, 2.20, 2.18, 2.16, 2.14, 2.13, 2.12, 2.11, 2.10, 2.09, 2.09, 2.08, 2.07, 2.07, 2.06, 2.06, 2.06, 2.05, 2.05, 2.05];
+const tq = df => df < 1 ? NaN : df < 30 ? T95[df] : df < 60 ? 2.01 : 1.98;
+
+function analyze(ev) {
+  const out = {n: 0, pairs: [], marks: []};
+  if (ev.length < 6) return out;
+  const d = []; for (let i = Math.max(1, ev.length - 300); i < ev.length; i++) d.push(ev[i].t - ev[i - 1].t);
+  const beat = median(d.filter(x => x > 0.05));
+  if (!Number.isFinite(beat)) return out;
+  out.beatGuess = beat;
+
+  // split into segments of consistently spaced ticks; k = beat index within a segment
+  const segs = []; let cur = [{t: ev[0].t, peak: ev[0].peak, k: 0}], rej = 0;
+  for (let i = 1; i < ev.length; i++) {
+    const last = cur[cur.length - 1], r = (ev[i].t - last.t) / beat, m = Math.round(r);
+    if (m >= 1 && Math.abs(r - m) <= 0.35) { cur.push({t: ev[i].t, peak: ev[i].peak, k: last.k + m}); rej = 0; }
+    else if (++rej >= 2) { segs.push(cur); cur = [{t: ev[i].t, peak: ev[i].peak, k: 0}]; rej = 0; }
+  }
+  segs.push(cur);
+
+  const pairs = []; let loudSum = 0, quietSum = 0, loudCnt = 0, quietCnt = 0;
+  segs.forEach((seg, si) => {
+    if (seg.length < 4) return;
+    let pe = 0, ne = 0, po = 0, no = 0;
+    seg.forEach(e => { if (e.k % 2 === 0) { pe += e.peak; ne++; } else { po += e.peak; no++; } });
+    const me = pe / (ne || 1), mo = po / (no || 1), loudP = me >= mo ? 0 : 1;
+    loudSum += Math.max(pe, po); quietSum += Math.min(pe, po) === pe ? pe : po;
+    loudCnt += loudP === 0 ? ne : no; quietCnt += loudP === 0 ? no : ne;
+    if (si === segs.length - 1) out.marks = seg.slice(-14).map(e => ({t: e.t, loud: e.k % 2 === loudP}));
+    for (let j = 1; j + 1 < seg.length; j++) {
+      const a = seg[j - 1], b = seg[j], c = seg[j + 1];
+      if (b.k - a.k !== 1 || c.k - b.k !== 1 || a.k % 2 !== loudP) continue;
+      const dAB = b.t - a.t, dBA = c.t - b.t;
+      pairs.push({t: c.t, dAB, dBA, pct: (dAB - dBA) / (dAB + dBA) * 100, ms: (dAB - dBA) * 1000});
+    }
+  });
+  if (!pairs.length) return out;
+
+  const med = median(pairs.map(p => p.pct));
+  const mad = median(pairs.map(p => Math.abs(p.pct - med))) * 1.4826;
+  const lim = Math.max(5 * mad, 0.3);
+  pairs.forEach(p => p.out = Math.abs(p.pct - med) > lim);
+  const k = pairs.filter(p => !p.out), n = k.length;
+  if (!n) return out;
+  const mean = f => k.reduce((s, p) => s + f(p), 0) / n;
+  const pct = mean(p => p.pct), ms = mean(p => p.ms), dAB = mean(p => p.dAB), dBA = mean(p => p.dBA);
+  const sd = n > 1 ? Math.sqrt(k.reduce((s, p) => s + (p.pct - pct) ** 2, 0) / (n - 1)) : NaN;
+  const ci = n > 1 ? tq(n - 1) * sd / Math.sqrt(n) : NaN;
+  const beatMean = (dAB + dBA) / 2, T = 2 * beatMean;
+  let run = 0; pairs.forEach((p, i) => { if (!p.out) run++; });
+  Object.assign(out, {
+    n, pct, ms, sd, ci, dAB, dBA, pairs,
+    outliers: pairs.length - n, bph: 3600 / beatMean, T, L: 9.80665 * (T / (2 * Math.PI)) ** 2,
+    loudRatio: (loudSum / (loudCnt || 1)) / ((quietSum / (quietCnt || 1)) || 1e-12)
+  });
+  return out;
+}
+
+/* ---------- state ---------- */
+let det = null, events = [], stats = null, mode = 'idle';
+let actx = null, stream = null, proc = null, wake = null, timer = null, raf = 0;
+
+function newDetector(rate) {
+  det = new TickDetector(rate, e => events.push(e));
+  det.sens = +$('sens').value;
+}
+function setSource(t) { $('srcLabel').textContent = t; }
+function showMsg(t) { $('msg').textContent = t || ''; $('msg').hidden = !t; }
+
+function classify(p) {
+  const a = Math.abs(p);
+  if (a < 1) return ['ok', 'V taktu'];
+  if (a < 3) return ['fine', 'Dobré'];
+  if (a < 6) return ['warn', 'Slyšitelné kulhání'];
+  return ['bad', 'Výrazné kulhání'];
+}
+
+function update() {
+  stats = analyze(events);
+  if (det && Number.isFinite(stats.beatGuess) && events.length > 8) det.refr = Math.round(Math.max(0.08, 0.4 * stats.beatGuess) * det.sr);
+  render();
+}
+
+function render() {
+  const s = stats || {n: 0, pairs: [], marks: []};
+  const has = s.n >= 3, solid = s.n >= 10;
+  $('bigPct').textContent = has ? sfmt(s.pct, 1) : '—';
+  $('bigMs').textContent = has ? fmt(Math.abs(s.ms), 1) + ' ms' : '—';
+  $('bigCi').textContent = Number.isFinite(s.ci) ? '± ' + fmt(s.ci, 2) + ' %' : '—';
+  $('bigN').textContent = s.n || '—';
+  const pill = $('pill');
+  if (solid) { const [c, t] = classify(s.pct); pill.className = 'pill ' + c; pill.textContent = t; }
+  else { pill.className = 'pill'; pill.textContent = mode === 'mic' ? 'Poslouchám…' : '—'; }
+
+  $('fAB').textContent = has ? fmt(s.dAB * 1000, 1) + ' ms' : '—';
+  $('fBA').textContent = has ? fmt(s.dBA * 1000, 1) + ' ms' : '—';
+  $('fBph').textContent = has ? fmt(s.bph, 0) : '—';
+  $('fT').textContent = has ? fmt(s.T, 3) + ' s' : '—';
+  $('fL').textContent = has ? '≈ ' + fmt(s.L * 100, 1) + ' cm' : '—';
+  $('fSd').textContent = Number.isFinite(s.sd) ? fmt(s.sd, 2) + ' %' : '—';
+  $('fLoud').textContent = has ? 'A o ' + fmt((s.loudRatio - 1) * 100, 0) + ' % hlasitější' : '—';
+  $('fOut').textContent = has ? String(s.outliers) : '—';
+
+  let adv;
+  if (!has) adv = mode === 'mic'
+    ? 'Poslouchám. Potřebuji aspoň 10 párů úderů, to je asi 15–30 sekund. Když se v signálu neobjevují svislé čáry, posuňte telefon blíž nebo zvyšte citlivost.'
+    : 'Spusťte poslech mikrofonem, nahrajte záznam tikotu, nebo si pusťte ukázku.';
+  else if (!solid) adv = 'Sbírám data. Výsledek bude spolehlivý po 10 a více párech úderů.';
+  else {
+    const a = Math.abs(s.pct), longer = s.pct > 0 ? 'A→B' : 'B→A';
+    if (a < 1) adv = `Hodiny tikají do taktu. Interval ${longer} je delší jen o ${fmt(Math.abs(s.ms), 1)} ms, to ucho nerozezná. Není co měnit.`;
+    else adv = `Interval ${longer} je delší o ${fmt(Math.abs(s.ms), 1)} ms (${fmt(a, 1)} % úderu). Uložte měření, posuňte spodek skříně o 1–2 mm do strany a změřte znovu. Pokud se odchylka zvětší, posuňte na opačnou stranu.`;
+    if (Number.isFinite(s.ci) && s.ci > 0.5) adv += ' Nejistota je zatím velká, měřte déle.';
+    if (s.loudRatio < 1.12) adv += ' Údery A a B jsou skoro stejně hlasité, proto mezi měřeními porovnávejte jen velikost odchylky, ne stranu.';
+  }
+  $('advice').textContent = adv;
+  $('btnSave').disabled = !solid;
+  drawPlate(s); drawSeries(s);
+  if (mode !== 'mic') drawTrace();
+}
+
+/* ---------- drawing ---------- */
+function drawPlate(s) {
+  const X = p => 20 + (Math.max(-10, Math.min(10, p)) + 10) / 20 * 360;
+  let h = `<rect class="z-warn" x="${X(-3)}" y="16" width="${X(3) - X(-3)}" height="20" rx="2"/>` +
+          `<rect class="z-good" x="${X(-1)}" y="16" width="${X(1) - X(-1)}" height="20" rx="2"/>`;
+  for (let p = -10; p <= 10; p++) {
+    const x = X(p), maj = p % 5 === 0;
+    h += `<line class="${maj ? 't-maj' : 't-min'}" x1="${x}" x2="${x}" y1="${maj ? 12 : 20}" y2="${maj ? 40 : 32}"/>`;
+    if (maj) h += `<text class="t-lab" x="${x}" y="56" text-anchor="middle">${p < 0 ? '−' + (-p) : p > 0 ? '+' + p : '0'}</text>`;
+  }
+  if (s && s.n >= 3) {
+    const x = X(s.pct);
+    if (Number.isFinite(s.ci)) { const x0 = X(s.pct - s.ci), x1 = X(s.pct + s.ci); h += `<rect class="ci" x="${x0}" y="5" width="${Math.max(1.5, x1 - x0)}" height="5" rx="2"/>`; }
+    h += `<line class="needle" x1="${x}" x2="${x}" y1="4" y2="42"/><circle class="needle-dot" cx="${x}" cy="42" r="3.5"/>`;
+  }
+  $('plate').innerHTML = h;
+}
+
+function prep(c, h) {
+  const dpr = window.devicePixelRatio || 1, W = c.clientWidth || 600;
+  c.style.height = h + 'px'; c.width = Math.round(W * dpr); c.height = Math.round(h * dpr);
+  const g = c.getContext('2d'); g.setTransform(dpr, 0, 0, dpr, 0, 0); g.clearRect(0, 0, W, h);
+  return {g, W, H: h};
+}
+
+function drawTrace() {
+  const {g, W, H} = prep($('trace'), 112);
+  const mono = '10.5px ' + css('--mono');
+  if (!det) { g.fillStyle = css('--muted'); g.font = mono; g.fillText('Žádný signál', 12, H / 2); return; }
+  const end = det.traceBin, start = end - TRACE_BINS;
+  let mx = 1e-9; for (let i = Math.max(0, start); i < end; i++) mx = Math.max(mx, det.trace[i % TRACE_BINS]);
+  const base = H - 6, top = 16, yv = v => base - Math.sqrt(Math.min(1, v / mx)) * (base - top);
+  g.beginPath(); g.moveTo(0, base);
+  for (let i = 0; i < TRACE_BINS; i++) { const b = start + i; g.lineTo(i / (TRACE_BINS - 1) * W, yv(b >= 0 ? det.trace[b % TRACE_BINS] : 0)); }
+  g.lineTo(W, base); g.closePath(); g.fillStyle = css('--trace'); g.fill();
+  const thr = Math.max(det.floor * det.sens, 1e-5);
+  if (thr < mx) { g.setLineDash([3, 4]); g.strokeStyle = css('--muted'); g.lineWidth = 1; g.beginPath(); g.moveTo(0, yv(thr)); g.lineTo(W, yv(thr)); g.stroke(); g.setLineDash([]); }
+  const bd = det.binN / det.sr;
+  (stats?.marks || []).forEach(m => {
+    const b = m.t / bd; if (b < start || b > end) return;
+    const x = (b - start) / TRACE_BINS * W, col = css(m.loud ? '--a' : '--b');
+    g.strokeStyle = col; g.lineWidth = 2; g.beginPath(); g.moveTo(x, 14); g.lineTo(x, base); g.stroke();
+    g.fillStyle = col; g.font = '600 ' + mono; g.textAlign = 'center'; g.fillText(m.loud ? 'A' : 'B', x, 11);
+  });
+  g.textAlign = 'left';
+}
+
+function drawSeries(s) {
+  const {g, W, H} = prep($('series'), 190);
+  const mono = '10.5px ' + css('--mono'), muted = css('--muted');
+  g.font = mono;
+  const P = (s && s.pairs) || [];
+  if (P.length < 2) { g.fillStyle = muted; g.fillText('Zatím žádná data', 12, H / 2); return; }
+  const pad = {l: 42, r: 12, t: 10, b: 22};
+  const t0 = P[0].t, t1 = Math.max(P[P.length - 1].t, t0 + 1);
+  let ym = Math.max(2, ...P.filter(p => !p.out).map(p => Math.abs(p.pct)));
+  ym = Math.min(ym * 1.1, 25);
+  const step = [0.5, 1, 2, 5, 10].find(st => ym / st <= 3) || 10;
+  ym = Math.ceil(ym / step) * step;
+  const x = t => pad.l + (t - t0) / (t1 - t0) * (W - pad.l - pad.r);
+  const y = v => pad.t + (1 - (Math.max(-ym, Math.min(ym, v)) + ym) / (2 * ym)) * (H - pad.t - pad.b);
+  g.fillStyle = css('--good'); g.globalAlpha = .14; g.fillRect(pad.l, y(1), W - pad.l - pad.r, y(-1) - y(1)); g.globalAlpha = 1;
+  g.strokeStyle = css('--line'); g.lineWidth = 1; g.fillStyle = muted; g.textAlign = 'right'; g.textBaseline = 'middle';
+  for (let v = -ym; v <= ym + 1e-9; v += step) {
+    g.beginPath(); g.moveTo(pad.l, y(v)); g.lineTo(W - pad.r, y(v)); g.stroke();
+    g.fillText((v > 0 ? '+' : v < 0 ? '−' : '') + fmt(Math.abs(v), step < 1 ? 1 : 0) + ' %', pad.l - 6, y(v));
+  }
+  g.strokeStyle = css('--ink'); g.globalAlpha = .5; g.beginPath(); g.moveTo(pad.l, y(0)); g.lineTo(W - pad.r, y(0)); g.stroke(); g.globalAlpha = 1;
+  const span = t1 - t0, xs = [5, 10, 15, 30, 60, 120, 300, 600, 1200].find(st => span / st <= 6) || 1800;
+  g.textAlign = 'center'; g.textBaseline = 'alphabetic';
+  for (let v = 0; v <= span + 1e-9; v += xs) g.fillText(fmt(v, 0) + ' s', x(t0 + v), H - 6);
+  P.forEach(p => {
+    g.fillStyle = p.out ? css('--bad') : muted; g.globalAlpha = p.out ? .5 : .55;
+    g.beginPath(); g.arc(x(p.t), y(p.pct), p.out ? 2 : 2.3, 0, Math.PI * 2); g.fill();
+  });
+  g.globalAlpha = 1;
+  let sum = 0, cnt = 0; g.strokeStyle = css('--brass'); g.lineWidth = 2.2; g.beginPath();
+  P.forEach(p => { if (p.out) return; sum += p.pct; cnt++; const X = x(p.t), Y = y(sum / cnt); cnt === 1 ? g.moveTo(X, Y) : g.lineTo(X, Y); });
+  g.stroke(); g.textAlign = 'left';
+}
+
+/* ---------- sources ---------- */
+const NO_MIC = 'Mikrofon tu není k dispozici. Povolte ho v nastavení prohlížeče (ikona zámku vedle adresy → Oprávnění → Mikrofon) a zkuste to znovu. Případně nahrajte tikot diktafonem v telefonu a použijte Nahrát záznam.';
+
+async function startMic() {
+  if (mode === 'mic') { stopMic(); return; }
+  showMsg('');
+  if (!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia) { showMsg(NO_MIC); return; }
+  try {
+    stream = await navigator.mediaDevices.getUserMedia({audio: {echoCancellation: false, noiseSuppression: false, autoGainControl: false}});
+  } catch (e) { showMsg(NO_MIC); return; }
+  try {
+    actx = new (window.AudioContext || window.webkitAudioContext)();
+    await actx.resume();
+    const src = actx.createMediaStreamSource(stream);
+    proc = actx.createScriptProcessor(4096, 1, 1);
+    const mute = actx.createGain(); mute.gain.value = 0;
+    newDetector(actx.sampleRate); events = []; stats = null;
+    proc.onaudioprocess = ev => det.process(ev.inputBuffer.getChannelData(0));
+    src.connect(proc); proc.connect(mute); mute.connect(actx.destination);
+  } catch (e) { showMsg('Zvuk z mikrofonu se nepodařilo spustit: ' + (e.message || e)); stopMic(); return; }
+  mode = 'mic'; setSource('Živě z mikrofonu');
+  const b = $('btnMic'); b.textContent = 'Zastavit poslech'; b.classList.add('live');
+  try { wake = await navigator.wakeLock?.request('screen'); } catch (e) { wake = null; }
+  timer = setInterval(update, 300);
+  const loop = () => { drawTrace(); raf = requestAnimationFrame(loop); }; loop();
+  render();
+}
+function stopMic() {
+  clearInterval(timer); cancelAnimationFrame(raf);
+  try { proc && proc.disconnect(); } catch (e) {}
+  try { stream && stream.getTracks().forEach(t => t.stop()); } catch (e) {}
+  try { actx && actx.close(); } catch (e) {}
+  try { wake && wake.release(); } catch (e) {}
+  proc = stream = actx = wake = null;
+  if (mode === 'mic') { mode = 'idle'; setSource('Poslech zastaven'); }
+  const b = $('btnMic'); b.textContent = 'Poslouchat mikrofonem'; b.classList.remove('live');
+  update(); drawTrace();
+}
+
+async function runBuffer(data, rate, label) {
+  newDetector(rate); events = []; stats = null;
+  const prog = $('progress'), bar = $('progBar'); prog.hidden = false;
+  const chunk = rate * 3;
+  for (let i = 0; i < data.length; i += chunk) {
+    det.process(data.subarray(i, Math.min(i + chunk, data.length)));
+    if (events.length > 8) { const s = analyze(events); if (Number.isFinite(s.beatGuess)) det.refr = Math.round(Math.max(0.08, 0.4 * s.beatGuess) * rate); }
+    bar.style.width = (Math.min(1, (i + chunk) / data.length) * 100) + '%';
+    await new Promise(r => setTimeout(r, 0));
+  }
+  prog.hidden = true; bar.style.width = '0';
+  mode = 'idle'; setSource(label + ' · ' + fmt(data.length / rate, 0) + ' s');
+  update(); drawTrace();
+}
+
+async function loadFile(f) {
+  if (!f) return;
+  if (mode === 'mic') stopMic();
+  showMsg(''); setSource('Zpracovávám ' + f.name + '…');
+  try {
+    const buf = await f.arrayBuffer();
+    const ac = new (window.AudioContext || window.webkitAudioContext)();
+    const ab = await new Promise((res, rej) => { const p = ac.decodeAudioData(buf, res, rej); if (p && p.then) p.then(res, rej); });
+    try { ac.close(); } catch (e) {}
+    if (ab.duration < 10) showMsg('Záznam je krátký (' + fmt(ab.duration, 0) + ' s). Pro spolehlivý výsledek nahrajte aspoň minutu.');
+    await runBuffer(ab.getChannelData(0), ab.sampleRate, f.name);
+  } catch (e) { showMsg('Soubor se nepodařilo přečíst. Použijte běžný zvukový formát, například m4a, mp3 nebo wav.'); setSource('—'); }
+}
+
+function synthDemo() {
+  const rate = 44100, dur = 80, n = rate * dur, x = new Float32Array(n);
+  let seed = 20261011; const rnd = () => (seed = (seed * 1664525 + 1013904223) >>> 0) / 4294967296;
+  const gauss = () => Math.sqrt(-2 * Math.log(rnd() || 1e-9)) * Math.cos(2 * Math.PI * rnd());
+  for (let i = 0; i < n; i++) x[i] = 0.004 * gauss() + 0.012 * Math.sin(2 * Math.PI * 50 * i / rate);
+  const AB = 0.7800, BA = 0.7200; // 4 % out of beat, 4800 beats/hour
+  let t = 0.6, loud = true;
+  const click = (t0, amp, f) => {
+    const i0 = Math.round(t0 * rate), len = Math.round(0.03 * rate);
+    for (let j = 0; j < len && i0 + j < n; j++) { const tt = j / rate, e = Math.exp(-tt / 0.0035); x[i0 + j] += amp * e * (0.65 * Math.sin(2 * Math.PI * f * tt) + 0.35 * gauss()); }
+  };
+  while (t < dur - 0.2) {
+    const t0 = t + 0.00025 * gauss(), amp = loud ? 0.5 : 0.34;
+    click(t0, amp, loud ? 3100 : 3600); click(t0 + 0.011, amp * 0.3, 2400);
+    t += loud ? AB : BA; loud = !loud;
+  }
+  return {x, rate};
+}
+function runDemo() {
+  if (mode === 'mic') stopMic();
+  showMsg('');
+  const {x, rate} = synthDemo();
+  runBuffer(x, rate, 'Ukázka · simulované hodiny s kulháním 4 %');
+}
+
+function resetMeasurement() {
+  events = []; stats = null;
+  if (mode === 'mic') { setSource('Živě z mikrofonu · nové měření'); }
+  else { det = null; setSource('—'); }
+  render(); drawTrace();
+}
+
+/* ---------- adjustment log ---------- */
+const KEY = 'tikomer.log.v1';
+const loadLog = () => { try { return JSON.parse(localStorage.getItem(KEY) || '[]'); } catch (e) { return []; } };
+const saveLog = l => { try { localStorage.setItem(KEY, JSON.stringify(l)); } catch (e) {} };
+let log = loadLog();
+function renderLog() {
+  const body = $('logBody');
+  if (!log.length) { body.innerHTML = '<tr><td colspan="7" class="empty">Zatím nic uloženého. Po každém měření uložte výsledek s poznámkou, co jste na hodinách změnili.</td></tr>'; return; }
+  body.innerHTML = '';
+  log.forEach((r, i) => {
+    const prev = log[i - 1]; let cmp = '<span class="same">—</span>';
+    if (prev) {
+      const dlt = Math.abs(r.pct) - Math.abs(prev.pct), unc = Math.hypot(r.ci || 0, prev.ci || 0);
+      cmp = Math.abs(dlt) <= unc ? `<span class="same">beze změny (${sfmt(dlt, 1)} %)</span>`
+          : dlt < 0 ? `<span class="better">lepší o ${fmt(-dlt, 1)} %</span>` : `<span class="worse">horší o ${fmt(dlt, 1)} %</span>`;
+    }
+    const tr = document.createElement('tr');
+    const d = new Date(r.ts);
+    tr.innerHTML = `<td class="num">${d.toLocaleString('cs-CZ', {day: 'numeric', month: 'numeric', hour: '2-digit', minute: '2-digit'})}</td>
+      <td></td><td class="num">${sfmt(r.pct, 1)} %</td><td class="num">${Number.isFinite(r.ci) ? fmt(r.ci, 2) : '—'}</td>
+      <td class="num">${r.n}</td><td>${cmp}</td><td><button class="del" data-i="${i}" aria-label="Smazat měření">Smazat</button></td>`;
+    tr.children[1].textContent = r.note || '—';
+    body.appendChild(tr);
+  });
+}
+$('btnSave').addEventListener('click', () => {
+  if (!stats || stats.n < 10) return;
+  log.push({ts: Date.now(), note: $('note').value.trim(), pct: stats.pct, ms: stats.ms, ci: stats.ci, n: stats.n, bph: stats.bph});
+  saveLog(log); $('note').value = ''; renderLog();
+});
+$('logBody').addEventListener('click', e => {
+  const b = e.target.closest('.del'); if (!b) return;
+  log.splice(+b.dataset.i, 1); saveLog(log); renderLog();
+});
+
+/* ---------- wiring ---------- */
+$('btnMic').addEventListener('click', startMic);
+$('btnFile').addEventListener('click', () => $('file').click());
+$('file').addEventListener('change', e => { loadFile(e.target.files[0]); e.target.value = ''; });
+$('btnDemo').addEventListener('click', runDemo);
+$('btnReset').addEventListener('click', resetMeasurement);
+$('sens').addEventListener('input', e => { const v = +e.target.value; $('sensOut').textContent = 'práh ' + v + '× šum'; if (det) det.sens = v; });
+
+const redraw = () => { drawPlate(stats); drawSeries(stats); drawTrace(); };
+try { matchMedia('(prefers-color-scheme: dark)').addEventListener('change', redraw); } catch (e) {}
+new MutationObserver(redraw).observe(document.documentElement, {attributes: true, attributeFilter: ['data-theme']});
+let rz; window.addEventListener('resize', () => { clearTimeout(rz); rz = setTimeout(redraw, 120); });
+document.addEventListener('visibilitychange', async () => { if (mode === 'mic' && document.visibilityState === 'visible' && !wake) { try { wake = await navigator.wakeLock?.request('screen'); } catch (e) {} } });
+
+renderLog(); render();
+runDemo();
+})();
+</script>
+
+<script>if("serviceWorker" in navigator)navigator.serviceWorker.register("sw.js").catch(()=>{});</script>
+</body></html>
